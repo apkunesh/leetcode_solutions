@@ -1,10 +1,12 @@
 # Lots of mistakes around adding the root back in when a word is at its end.
 
-class TreeNode():
-    def __init__(self,value:str,is_word:bool=False):
+
+class TreeNode:
+    def __init__(self, value: str, is_word: bool = False):
         self.value = value
-        self.children={}
+        self.children = {}
         self.is_word = is_word
+
 
 class Solution:
     def wordBreak(self, s: str, wordDict: List[str]) -> bool:
@@ -12,10 +14,10 @@ class Solution:
         for word in wordDict:
             cur_node = root
             for letter in word:
-                if cur_node.children.get(letter) is None: # Only spawn if not present
+                if cur_node.children.get(letter) is None:  # Only spawn if not present
                     cur_node.children[letter] = TreeNode(value=letter)
-                cur_node=cur_node.children[letter]
-            cur_node.is_word=True
+                cur_node = cur_node.children[letter]
+            cur_node.is_word = True
         candidates = set([root])
 
         for letter in s:
