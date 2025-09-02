@@ -13,7 +13,6 @@ class Solution:
         l1 = cand - 1  # Can be -1; in this case, not included at all.
         cand_r = total_len // 2 - cand
         l2 = cand_r - 1
-        is_even = total_len % 2 == 0
         while l < r:
             if nums1[l1] > nums2[l2]:
                 r = cand - 1
@@ -23,15 +22,20 @@ class Solution:
             l1 = cand - 1
             cand_r = total_len // 2 - cand
             l2 = cand_r - 1
-        left_results = (
-            [nums1[l1], nums1[l1 + 1]] if l1 < len(nums1) - 1 else [nums1[l1]]
-        )
-        right_results = (
-            [nums2[l2], nums2[l2 + 1]] if l2 < len(nums2) - 1 else [nums2[l2]]
-        )
-        all = left_results + right_results
-        all.sort()
-        if is_even:
-            return all[1] + all[2] // 2
-        else:
-            return all[2]
+        to_left = cand + cand_r
+        to_right = total_len - to_left
+        if to_left > to_right:  # Odd
+            return max([nums1[l1], nums2[l2]])
+        if to_left < to_right:  # Odd
+            lcand = nums1[l1 + 1] if l1 < len(nums1) - 1 else 2 * 10**32
+            rcand = nums2[l2 + 1] if l2 < len(nums2) - 1 else 2 * 10**32
+            return min([lcand, rcand])
+        # even
+        left_part = [nums1[l1], nums2[l2]]
+        right_part = [
+            nums1[l1 + 1] if l1 < len(nums2) - 1 else 2 * 10**32,
+            nums2[l2 + 1] if l2 < len(nums2) - 1 else 2 * 10**32,
+        ]
+        left_part.sort()
+        right_part.sort()
+        return (left_part[1] + right_part[0]) / 2
