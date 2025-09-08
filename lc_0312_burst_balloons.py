@@ -7,6 +7,10 @@
 #           3c) The one directly above: "The best with the same # of options but fewer choices."
 #               3ci) If this is the same as 3b, ... Brain is dead, have to return to this later.
 
+# n == nums.length
+# 1 <= n <= 300
+# 0 <= nums[i] <= 100
+
 """
 Nums array, size n. burst i, get nums[i-1]*nums[i]*nums[i+1] coins. OOB has a value of 1.
 Return max # of coins you can receive by bursting all balloons.
@@ -20,56 +24,74 @@ Notice also that in the example, we always pop the smallest first. Is there an o
 """
 
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 
-class Node:
-    def __init__(self, val):
-        self.val = val
-        self.right: Optional[Node] = None
-        self.left: Optional[Node] = None
-
-
-# Let's do brute force and improve on it
 class Solution:
     def maxCoins(self, nums: List[int]) -> int:
-        l_dum = Node(1)
-        r_dum = Node(1)
-        l_dum.right = r_dum
-        r_dum.left = l_dum
-        cur_left = l_dum
-        index_to_node = {}
-        for i in range(len(nums)):
-            cur_left.right = Node(nums[i])
-            r_dum.left = cur_left.right
-            cur_left.right.left = cur_left
-            cur_left.right.right = r_dum
-            index_to_node[i] = cur_left.right
-            cur_left = cur_left.right
+        if len(nums) == 0:
+            return 0
+        cached_values = {}
 
-        grand_max = {"val": 0}
+        def max_given_balloon_set(
+            balloon_set: Set[int],
+            index_to_left: Dict[int, Optional[int]],
+            index_to_right: Dict[int, Optional[int]],
+            leftmost: Optional[int] = None,
+        ) -> int:
+            if len(balloon_set) == 0:
+                return 0
+            cur = leftmost
+            key_list = [cur]
+            while cur:
+                key_list.append(index_to_right[cur])
+            cache_key = tuple(key_list)
+            if (
+                cache_key in cached_values
+            ):  # TODO: Perhaps reconstruct this in order if tupling isn't enough
+                return cached_values[cache_key]
+            indices_to_check, score_list = list(balloon_set), []
+            for i in range(len(indices_to_check)):
+                elem = indices_to_check[i]
+                old_elem_left, old_elem_right = index_to_left.get(
+                    elem
+                ), index_to_right.get(elem)
+                pop_value = (
+                    nums[elem]
+                    * (nums[old_elem_left] if old_elem_left is not None else 1)
+                    * (nums[old_elem_right] if old_elem_right is not None else 1)
+                )
+                if elem == leftmost:
+                    leftmost = index_to_right[elem]
+                if old_elem_left is not None:
+                    index_to_right[old_elem_left] = index_to_right[elem]
+                if old_elem_right is not None:
+                    index_to_left[old_elem_right] = index_to_left[elem]
+                balloon_set.remove(elem)
+                max_future = max_given_balloon_set(
+                    balloon_set, index_to_left, index_to_right, leftmost
+                )
+                balloon_set.add(elem)
+                if old_elem_right is not None:
+                    index_to_left[old_elem_right] = elem
+                if old_elem_left is not None:
+                    index_to_right[old_elem_left] = elem
+                score_list.append(max_future + pop_value)
+            cached_values[cache_key] = max(score_list)
+            return cached_values[cache_key]
 
-        def recurse(i: int, index_to_node: Dict[int, Node], total: int):
-            if len(index_to_node) == 1:
-                difference = index_to_node[i].val
-                total = total + difference
-                grand_max["val"] = max(total, grand_max["val"])
-                total -= difference
-                return
-            happy_node = index_to_node.pop(i)
-            difference = happy_node.val * happy_node.left.val * happy_node.right.val  # type: ignore
-            this_level_left = happy_node.left
-            this_level_right = happy_node.right
-            this_level_left.right = this_level_right
-            this_level_right.left = this_level_left
-            total = total + difference
-            keys_here = list(index_to_node.keys())
-            for index in keys_here:
-                recurse(index, index_to_node, total)
-            index_to_node[i] = happy_node
-            this_level_left.right = happy_node
-            this_level_right.left = happy_node
-
-        for i in range(len(nums)):
-            recurse(i, index_to_node, 0)
-        return grand_max["val"]
+        balloon_set = set(range(len(nums)))
+        i_to_l: Dict[int, Optional[int]] = {0: None}
+        i_to_r: Dict[int, Optional[int]] = {len(nums) - 1: None}
+        if len(nums) > 1:
+            i_to_l[len(nums) - 1] = len(nums) - 2
+            i_to_r[0] = 1
+        for i in range(1, len(nums) - 1):
+            i_to_l[i], i_to_r[i] = i - 1, i + 1
+        grand_max = max_given_balloon_set(
+            balloon_set=balloon_set,
+            index_to_left=i_to_l,
+            index_to_right=i_to_r,
+            leftmost=0,
+        )
+        return grand_max
