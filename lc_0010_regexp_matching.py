@@ -1,40 +1,59 @@
 class Solution:
     def isMatch(self, s: str, p: str) -> bool:
-        def recurse(s, p):
-            if len(s) == 0 and len(p) == 0:
-                # End of both, it worked!
-                return True
-            if len(s) == 0 or len(p) == 0:
-                # Ran out of one before the other was complete -- not full match
-                return False
-            # Look out for repeats
-            if len(p) > 1 and p[1] == "*":
-                # Case 1: 0 occurrences
-                if recurse(s[0:], p[2:]) is True:
-                    return True
-                s_ind = 0
-                while s_ind < len(s) and (
-                    s[s_ind] == p[0] or p[0] == "."
-                ):  # This one could get costly
-                    # remaining_s = '' if s_ind == len(s)-1 else s[s_]
-                    new_match = recurse(s[s_ind + 1 :], p[2:])
-                    if new_match:
-                        return True
-                    s_ind += 1
-                return False  # No match found
-            # Look out for single wildcards
-            if p[0] == ".":
-                return recurse(s[1:], p[1:])
-            # So it's just a regular letter match
-            return False if p[0] != s[0] else recurse(s[1:], p[1:])
+        tuple_to_result = {}
 
-        return recurse(s, p)
+        def recurse(i_s, i_p):
+            if (i_s, i_p) in tuple_to_result:
+                return tuple_to_result[(i_s, i_p)]
+            if i_s == len(s) and i_p == len(p):
+                # both at the end same time!
+                tuple_to_result[(i_s, i_p)] = True
+                return tuple_to_result[(i_s, i_p)]
+            if i_p == len(p):
+                # Finished pattern with leftover letters in string
+                tuple_to_result[(i_s, i_p)] = False
+                return tuple_to_result[(i_s, i_p)]
+            if i_s == len(s):
+                # Finished string with some elements left in pattern
+                if (len(p) - i_p) % 2 != 0:
+                    tuple_to_result[(i_s, i_p)] = False
+                    return tuple_to_result[(i_s, i_p)]
+                star_loc = i_p + 1
+                while star_loc < len(p):
+                    if p[star_loc] != "*":
+                        tuple_to_result[(i_s, i_p)] = False
+                        return tuple_to_result[(i_s, i_p)]
+                    star_loc += 2
+                tuple_to_result[(i_s, i_p)] = True
+                return tuple_to_result[(i_s, i_p)]
+            # Check for star case first
+            if i_p + 1 < len(p) and p[i_p + 1] == "*":
+                zeroth = recurse(i_s, i_p + 2)
+                if zeroth == True:
+                    tuple_to_result[(i_s, i_p)] = True
+                    return tuple_to_result[(i_s, i_p)]
+                s_to_match = i_s
+                while s_to_match < len(s) and (
+                    s[s_to_match] == p[i_p] or p[i_p] == "."
+                ):
+                    s_to_match += 1
+                    result = recurse(s_to_match, i_p + 2)
+                    if result == True:
+                        tuple_to_result[(i_s, i_p)] = True
+                        return tuple_to_result[(i_s, i_p)]
+                tuple_to_result[(i_s, i_p)] = False
+                return tuple_to_result[(i_s, i_p)]
+            # Check for . case
+            if p[i_p] == "." or p[i_p] == s[i_s]:
+                tuple_to_result[(i_s, i_p)] = recurse(i_s + 1, i_p + 1)
+                return tuple_to_result[(i_s, i_p)]
+            tuple_to_result[(i_s, i_p)] = False
+            return tuple_to_result[(i_s, i_p)]
+
+        return recurse(0, 0)
 
 
-# s = "aab"
-# p = "c*a*b"
-# Expect true
-s = "ab"
-p = ".*c"
-# Expect false
-print(Solution().isMatch(s, p))
+print(Solution().isMatch("aa", "a") is False)
+print(Solution().isMatch("nnn", "n*") is True)
+print(Solution().isMatch("xyz", ".*z") is True)
+print(Solution().isMatch("a", "ab*") is True)
