@@ -1,97 +1,67 @@
-# NOTE: This one was not completed. I believe the solution should look like:
-#      1) Do DP where the table contains score, hashset from index to node, and linkedlist of nodes representing balloons
-#      2) Rows represent # of element popped, columns represent allowed choices.
-#      3) For a given position in the table, we need to consider 3 possibilities for the "best":
-#           3a) The one to our left. Essentially, "adding the new element doesn't affect which we should choose so far."
-#           3b) The one to our top-left. "The best without access to the current element." If we add in our new element, we can compare.
-#           3c) The one directly above: "The best with the same # of options but fewer choices."
-#               3ci) If this is the same as 3b, ... Brain is dead, have to return to this later.
-
-# n == nums.length
-# 1 <= n <= 300
-# 0 <= nums[i] <= 100
-
-"""
-Nums array, size n. burst i, get nums[i-1]*nums[i]*nums[i+1] coins. OOB has a value of 1.
-Return max # of coins you can receive by bursting all balloons.
-COOL!
-
-Almost certainly 2d dynamic programming problem.
-I notice that I can construct the same result by *inserting* values. Not sure I wanna do that but let's look.
-
-Notice also that in the example, we always pop the smallest first. Is there an obvious counterexample?
-
-"""
-
-
-from typing import Dict, List, Optional, Set
+from collections import deque
+from typing import Dict, List, Tuple
 
 
 class Solution:
     def maxCoins(self, nums: List[int]) -> int:
-        if len(nums) == 0:
-            return 0
-        cached_values = {}
+        """
+        General idea:
+         - Start assuming 0 balloons
+         - What would score be if each of the numbs was the final balloon popped?
+         - Now we can add in the next balloon
+         - For each balloon combination, there's an associated max. Store this max in memory. We can discard each previous (now-unneeded) layer.
+         Notice that doing it this way (with inserts) is, like, O(n) every time, since we're adding in at specific indices. It'd be nice to avoid this.
+         LinkedLists would simplify the *process* of figuring out who my neighbors are, but it's not exactly ideal...
+         OH! I can think of it as adding in values *between* elements that are already present.
+        """
 
-        def max_given_balloon_set(
-            balloon_set: Set[int],
-            index_to_left: Dict[int, Optional[int]],
-            index_to_right: Dict[int, Optional[int]],
-            leftmost: Optional[int] = None,
-        ) -> int:
-            if len(balloon_set) == 0:
-                return 0
-            cur = leftmost
-            key_list = [cur]
-            while cur:
-                key_list.append(index_to_right[cur])
-            cache_key = tuple(key_list)
-            if (
-                cache_key in cached_values
-            ):  # TODO: Perhaps reconstruct this in order if tupling isn't enough
-                return cached_values[cache_key]
-            indices_to_check, score_list = list(balloon_set), []
-            for i in range(len(indices_to_check)):
-                elem = indices_to_check[i]
-                old_elem_left, old_elem_right = index_to_left.get(
-                    elem
-                ), index_to_right.get(elem)
-                pop_value = (
-                    nums[elem]
-                    * (nums[old_elem_left] if old_elem_left is not None else 1)
-                    * (nums[old_elem_right] if old_elem_right is not None else 1)
-                )
-                if elem == leftmost:
-                    leftmost = index_to_right[elem]
-                if old_elem_left is not None:
-                    index_to_right[old_elem_left] = index_to_right[elem]
-                if old_elem_right is not None:
-                    index_to_left[old_elem_right] = index_to_left[elem]
-                balloon_set.remove(elem)
-                max_future = max_given_balloon_set(
-                    balloon_set, index_to_left, index_to_right, leftmost
-                )
-                balloon_set.add(elem)
-                if old_elem_right is not None:
-                    index_to_left[old_elem_right] = elem
-                if old_elem_left is not None:
-                    index_to_right[old_elem_left] = elem
-                score_list.append(max_future + pop_value)
-            cached_values[cache_key] = max(score_list)
-            return cached_values[cache_key]
+        def construct_new_ordered_num(numset, new_index):
+            candidate = numset[0]
+            result = []
+            i = 0
+            while candidate[0] < new_index:
+                result.append(candidate)
+                i += 1
+                candidate = numset[i]
+            result.append((new_index, nums[new_index]))
+            while i < len(numset):
+                candidate = numset[i]
+                result.append(candidate)
+                i += 1
+            return result
 
-        balloon_set = set(range(len(nums)))
-        i_to_l: Dict[int, Optional[int]] = {0: None}
-        i_to_r: Dict[int, Optional[int]] = {len(nums) - 1: None}
-        if len(nums) > 1:
-            i_to_l[len(nums) - 1] = len(nums) - 2
-            i_to_r[0] = 1
-        for i in range(1, len(nums) - 1):
-            i_to_l[i], i_to_r[i] = i - 1, i + 1
-        grand_max = max_given_balloon_set(
-            balloon_set=balloon_set,
-            index_to_left=i_to_l,
-            index_to_right=i_to_r,
-            leftmost=0,
-        )
-        return grand_max
+        ordered_nums = deque([[(-1, 1), (len(nums), 1)]])
+        score_map: Dict[Tuple, int] = {(-1, len(nums)): 0}
+        count = 0
+        while ordered_nums:
+            # print("")
+            # print(f"ROUND {count}")
+            for _ in range(len(ordered_nums)):
+                numset = ordered_nums.popleft()
+                old_tuple = tuple([elem[0] for elem in numset])
+                for left_part, right_part in zip(numset[:-1], numset[1:]):
+                    index_tuple = (left_part[0], right_part[0])
+                    for i in range(index_tuple[0] + 1, index_tuple[1]):
+                        local_score = (
+                            left_part[1] * nums[i] * right_part[1]
+                            + score_map[old_tuple]
+                        )
+                        new_ordered_num = construct_new_ordered_num(numset, i)
+                        new_tuple = tuple([elem[0] for elem in new_ordered_num])
+                        if score_map.get(new_tuple) is None:
+                            score_map[new_tuple] = local_score
+                            # print(f"New tuple: {new_tuple}")
+                            ordered_nums.append(new_ordered_num)
+                        else:
+                            score_map[new_tuple] = max(
+                                [score_map[new_tuple], local_score]
+                            )
+            count += 1
+        return score_map[tuple([i for i in range(-1, len(nums) + 1)])]
+
+
+ex1 = Solution().maxCoins([3, 1, 5, 8])
+print(f"{ex1==167}, result {ex1}")
+
+ex2 = Solution().maxCoins([1, 5])
+print(f"{ex2==10}, result {ex2}")
