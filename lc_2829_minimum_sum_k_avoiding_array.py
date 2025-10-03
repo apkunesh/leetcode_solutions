@@ -1,14 +1,20 @@
 class Solution:
     def minimumSum(self, n: int, k: int) -> int:
-        left_contribution = min([(k + (k * k) // 2) // 4, (n + n * n) // 2])
+        # 3,5 -> [1,2] and [5]
+        # -> 1 to 5//2 for the left (1+2)//2 * 2, that is (1+k//2)/2 * k//2 -> (1+2)
+        left_contribution = (
+            int(((1 + k // 2) / 2) * (k // 2)) if n > k // 2 else (n + n * n) // 2
+        )
         if n <= k // 2:
             return left_contribution
         right_contribution = (
             k if n == k // 2 + 1 else ((n - k // 2) * (2 * k + n - 1 - k // 2)) // 2
         )
+        print(f"LEFT, RIGHT {[left_contribution,right_contribution]}")
         return left_contribution + right_contribution
 
     def minimumSumOneLiner(self, n, k) -> int:
+        # NOTE: This is not quite right after adjusting left side compute above
         return (
             min([(k + (k * k) // 2) // 4, (n + n * n) // 2])
             if n <= k // 2
@@ -22,12 +28,15 @@ print(f"{Solution().minimumSum(2,6)} should be 3")
 print(f"{Solution().minimumSum(1,1)} should be 1")
 print(f"{Solution().minimumSum(2,3)} should be 4")
 print(f"{Solution().minimumSum(3,1)} should be 6")
-print("Similarly, ")
-print(f"{Solution().minimumSumOneLiner(5,4)} should be 18")
-print(f"{Solution().minimumSumOneLiner(2,6)} should be 3")
-print(f"{Solution().minimumSumOneLiner(1,1)} should be 1")
-print(f"{Solution().minimumSumOneLiner(2,3)} should be 4")
-print(f"{Solution().minimumSumOneLiner(3,1)} should be 6")
+print(f"{Solution().minimumSum(3,5)} should be 8")
+
+# print("Similarly, ")
+# print(f"{Solution().minimumSumOneLiner(5,4)} should be 18")
+# print(f"{Solution().minimumSumOneLiner(2,6)} should be 3")
+# print(f"{Solution().minimumSumOneLiner(1,1)} should be 1")
+# print(f"{Solution().minimumSumOneLiner(2,3)} should be 4")
+# print(f"{Solution().minimumSumOneLiner(3,1)} should be 6")
+
 
 """
 Take n=13.
