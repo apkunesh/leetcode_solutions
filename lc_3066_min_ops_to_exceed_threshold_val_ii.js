@@ -1,4 +1,11 @@
 /**
+ * NOTE: Things learned:
+ * - list.push() to append to array
+ * - list.shift() is essentially a left-pop, but it's O(n)🤮
+ * - list.At() allows you to reference the end of an an array?
+ */
+
+/**
  * @param {number[]} nums
  * @param {number} k
  * @return {number}
