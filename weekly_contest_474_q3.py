@@ -10,29 +10,11 @@ class Solution:
 
         def excess_spaces(hours):
             if r[0] == r[1]:
-                potential_slots = hours - hours // r[0]
-                return potential_slots - d[0] - d[1]
-            twos_after_filling_free_slots = (
-                d[1] - hours // r[0] - hours // (r[0] * r[1])
+                return hours - hours // r[0] - d[0] - d[1]
+            unusable_for_both = (
+                hours // (r[0] * r[1]) if r[0] != r[1] else hours // r[0]
             )
-            if twos_after_filling_free_slots < 0:
-                twos_after_filling_free_slots = 0
-            ones_after_filling_free_slots = (
-                d[0] - hours // r[1] - hours // (r[0] * r[1])
-            )
-            if ones_after_filling_free_slots < 0:
-                ones_after_filling_free_slots = 0
-            shared_spaces = (
-                hours - hours // r[0] - hours // r[1] + hours // (r[0] * r[1])
-            )
-            print(
-                f"Shared spaces: {shared_spaces}, leftovers: {[ones_after_filling_free_slots,twos_after_filling_free_slots]}"
-            )
-            return (
-                shared_spaces
-                - ones_after_filling_free_slots
-                - twos_after_filling_free_slots
-            )
+            return hours - unusable_for_both - d[0] - d[1]
 
         left = 0
         right = 10**9 + 1
@@ -51,6 +33,6 @@ class Solution:
         return mid if excess_spaces(mid - 1) != 0 else mid - 1
 
 
-# print(Solution().minimumTime([3, 1], [2, 3]))
-print(Solution().minimumTime([1, 3], [2, 2]))
+print(Solution().minimumTime([3, 1], [2, 3]))
+# print(Solution().minimumTime([1, 3], [2, 2]))
 # print(Solution().minimumTime([2, 1], [3, 4]))
